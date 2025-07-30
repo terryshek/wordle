@@ -1,0 +1,54 @@
+@import "tailwindcss";
+.container {
+  max-width: 480px;
+  margin: auto;
+  padding: 2rem;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  margin: 5px 0;
+}
+
+.box {
+  width: 40px;
+  height: 40px;
+  margin: 0 3px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  border: 2px solid #ccc;
+}
+
+.hit {
+  background-color: #6aaa64; /* green */
+  color: white;
+}
+
+.present {
+  background-color: #c9b458; /* yellow */
+  color: white;
+}
+
+.miss {
+  background-color: #787c7e; /* gray */
+  color: white;
+}
+
+.input-area {
+  margin-top: 20px;
+  input {
+    font-size: 1.2rem;
+    padding: 5px;
+    width: 120px;
+    text-transform: uppercase;
+    border: 2px solid #ccc;
+    margin-right: 10px;
+  }
+}
