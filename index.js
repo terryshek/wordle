@@ -7,7 +7,17 @@ const rl = readline.createInterface({
 
 // Configuration
 const config = {
-  wordList: ["apple", "grape", "lemon", "peach", "mango", "melon"],
+  wordList: [
+    "hello",
+    "world",
+    "quite",
+    "fancy",
+    "fresh",
+    "panic",
+    "crazy",
+    "buggy",
+    "scare",
+  ],
   maxRounds: 6,
 };
 
