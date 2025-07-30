@@ -1,44 +1,51 @@
 const readline = require("readline");
+// ================= Configuration =================
+const config = {
+  wordList: [
+    "hello",
+    "world",
+    "quite",
+    "fancy",
+    "fresh",
+    "panic",
+    "crazy",
+    "buggy",
+    "scare",
+  ],
+  maxRounds: 6,
+  players: ["Terry1", "Terry2"], // Add more names to support more players
+};
 
-// Create input interface
+// Pick a shared answer (same across players)
+const answer =
+  config.wordList[
+    Math.floor(Math.random() * config.wordList.length)
+  ].toLowerCase();
+
+let gameOver = false;
+let round = 1;
+
+// Store each player's guesses and result
+const players = config.players.map((name) => ({
+  name,
+  guesses: [],
+  solved: false,
+}));
+
+// ================= Terminal Setup =================
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-// Game settings
-const config = {
-  wordList: ["apple", "grape", "lemon", "peach", "mango", "melon"],
-  maxRounds: 6,
-};
+// ================= Utility Functions =================
 
-// Pick a random answer from the list
-const answer =
-  config.wordList[
-    Math.floor(Math.random() * config.wordList.length)
-  ].toLowerCase();
-let currentRound = 0;
-
-console.log(`🔠 Welcome to the Wordle-style guessing game!`);
-console.log(`📝 The secret word has been chosen. It is a 5-letter word.`);
-console.log(`📖 Here are the rules:`);
-console.log("Hit Character in 🟩 means you guessed it right.");
-console.log(
-  "Present Character in 🟨 means it is in the word but in the wrong position."
-);
-console.log(
-  `🎯 You have ${config.maxRounds} chances to guess the 5-letter word. Good luck!\n`
-);
-
-// Evaluate guess against the correct answer
 function evaluateGuess(answer, guess) {
   const result = [];
   const answerArr = answer.split("");
   const guessArr = guess.split("");
-
   const usedIndices = new Set();
 
-  // Step 1: Check for Hits
   for (let i = 0; i < 5; i++) {
     if (guessArr[i] === answerArr[i]) {
       result[i] = { status: "Hit", letter: guessArr[i] };
@@ -46,7 +53,6 @@ function evaluateGuess(answer, guess) {
     }
   }
 
-  // Step 2: Check for Present or Miss
   for (let i = 0; i < 5; i++) {
     if (!result[i]) {
       let found = false;
@@ -67,63 +73,116 @@ function evaluateGuess(answer, guess) {
   return result;
 }
 
-// Format feedback result for user
 function displayResult(result) {
   return result
     .map(({ status, letter }) => {
       if (status === "Hit")
-        // green background, white text
-        return `\x1b[42m\x1b[97m ${letter.toUpperCase()} \x1b[0m`;
-      if (status === "Present")
-        // yellow background, black text
-        return `\x1b[43m\x1b[30m ${letter} \x1b[0m`;
-      return ` ${letter} `; // default, no color
+        return `\x1b[42m\x1b[97m ${letter.toUpperCase()} \x1b[0m`; // Green
+      if (status === "Present") return `\x1b[43m\x1b[30m ${letter} \x1b[0m`; // Yellow
+      return `\x1b[100m\x1b[37m ${letter} \x1b[0m`; // Gray
     })
     .join(" ");
 }
 
-// Main game loop
-function askGuess() {
-  if (currentRound >= config.maxRounds) {
-    console.log(`❌ Game over! The correct word was: ${answer.toUpperCase()}`);
+function showScoreboard() {
+  console.log(`\n📊 Current Scoreboard:`);
+  for (const player of players) {
+    console.log(
+      `${player.name}: ${player.guesses
+        .map((g) => displayResult(g.feedback))
+        .join(" / ")}`
+    );
+  }
+  console.log(""); // spacing
+}
+
+// ================= Main Game Logic =================
+
+function playRound(playerIndex = 0) {
+  if (gameOver || round > config.maxRounds) {
+    showFinalResult();
     rl.close();
     return;
   }
 
+  const player = players[playerIndex];
+
+  if (player.solved) {
+    // skip to next player
+    const nextIndex = (playerIndex + 1) % players.length;
+    if (nextIndex === 0) round++;
+    return playRound(nextIndex);
+  }
+
   rl.question(
-    `Round ${currentRound + 1} — Enter your 5-letter guess: `,
+    `${player.name}, Round ${round} — Enter your guess: `,
     (input) => {
       const guess = input.trim().toLowerCase();
 
-      // Input validation
       if (guess.length !== 5 || !/^[a-z]{5}$/.test(guess)) {
-        console.log("⚠️ Please enter a valid 5-letter English word.\n");
-        askGuess();
-        return;
+        console.log(
+          "⚠️ Invalid input. Please enter a 5-letter English word.\n"
+        );
+        return playRound(playerIndex);
       }
 
       if (!config.wordList.includes(guess)) {
-        console.log("📛 That word is not in the dictionary. Try another.\n");
-        askGuess();
-        return;
+        console.log("📛 This word is not in the dictionary.\n");
+        return playRound(playerIndex);
       }
 
-      currentRound++;
-      const result = evaluateGuess(answer, guess);
-      console.log("🧩 Feedback: ", displayResult(result), "\n");
+      const feedback = evaluateGuess(answer, guess);
+      player.guesses.push({ guess, feedback });
+
+      console.log(
+        `🧩 Feedback for ${player.name}:`,
+        displayResult(feedback),
+        "\n"
+      );
 
       if (guess === answer) {
+        player.solved = true;
+        gameOver = true;
         console.log(
-          `🎉 Congratulations! You guessed the word in ${currentRound} round(s). Answer: ${answer.toUpperCase()}`
+          `🎉 ${player.name} guessed the word correctly in round ${round}!`
         );
-        rl.close();
-        return;
+        return showFinalResult();
       }
 
-      askGuess();
+      const nextIndex = (playerIndex + 1) % players.length;
+      if (nextIndex === 0) round++;
+
+      playRound(nextIndex);
     }
   );
 }
 
-// Start the game
-askGuess();
+// ================= Final Result =================
+
+function showFinalResult() {
+  console.log(`📦 The correct word was: ${answer.toUpperCase()}`);
+  showScoreboard();
+
+  const winners = players.filter((p) => p.solved);
+  if (winners.length === 0) {
+    console.log("😢 No one guessed the word. Better luck next time.");
+  } else if (winners.length === 1) {
+    console.log(`🏆 Winner: ${winners[0].name}`);
+  } else {
+    console.log(`🤝 Tie between: ${winners.map((p) => p.name).join(", ")}`);
+  }
+}
+
+// ================= Game Intro =================
+
+console.log(`🔠 Welcome to Multiplayer Wordle!`);
+console.log(`👥 Players: ${config.players.join(", ")}`);
+console.log(`📝 The secret word has been chosen. It is a 5-letter word.`);
+console.log(`📖 Rules:`);
+console.log(`🟩 = correct letter & position`);
+console.log(`🟨 = correct letter but wrong position`);
+console.log(`⬛ = letter not in the word`);
+console.log(`🎯 Each player has up to ${config.maxRounds} rounds\n`);
+
+// Start Game
+playRound();
