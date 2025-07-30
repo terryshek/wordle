@@ -1,65 +1,59 @@
 const readline = require("readline");
 
-// Create input interface
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-// Game settings
+// Configuration
 const config = {
   wordList: ["apple", "grape", "lemon", "peach", "mango", "melon"],
   maxRounds: 6,
 };
 
-// Pick a random answer from the list
-const answer =
-  config.wordList[
-    Math.floor(Math.random() * config.wordList.length)
-  ].toLowerCase();
+let candidates = config.wordList.slice();
+let history = [];
 let currentRound = 0;
 
-console.log(`🔠 Welcome to the Wordle-style guessing game!`);
-console.log(`📝 The secret word has been chosen. It is a 5-letter word.`);
-console.log(`📖 Here are the rules:`);
-console.log("Hit Character in 🟩 means you guessed it right.");
+console.log(`🔠 Welcome to the Wordle-style guessing game (Cheating Mode)!`);
+console.log(`📝 The host is *pretending* to choose a 5-letter word.`);
+console.log(`📖 Rules:`);
+console.log(`🟩 = correct letter in correct position (Hit)`);
+console.log(`🟨 = correct letter in wrong position (Present)`);
+console.log(`⬜ = letter not in the word (Miss)`);
 console.log(
-  "Present Character in 🟨 means it is in the word but in the wrong position."
-);
-console.log(
-  `🎯 You have ${config.maxRounds} chances to guess the 5-letter word. Good luck!\n`
+  `🎯 You have ${config.maxRounds} chances to guess the 5-letter word.\n`
 );
 
-// Evaluate guess against the correct answer
+// Evaluate guess against an answer
 function evaluateGuess(answer, guess) {
-  const result = [];
+  const result = Array(5).fill(null);
   const answerArr = answer.split("");
   const guessArr = guess.split("");
+  const used = new Set();
 
-  const usedIndices = new Set();
-
-  // Step 1: Check for Hits
+  // First pass - Hits
   for (let i = 0; i < 5; i++) {
     if (guessArr[i] === answerArr[i]) {
-      result[i] = { status: "Hit", letter: guessArr[i] };
-      usedIndices.add(i);
+      result[i] = { letter: guessArr[i], status: "Hit" };
+      used.add(i);
     }
   }
 
-  // Step 2: Check for Present or Miss
+  // Second pass - Present or Miss
   for (let i = 0; i < 5; i++) {
     if (!result[i]) {
       let found = false;
       for (let j = 0; j < 5; j++) {
-        if (!usedIndices.has(j) && guessArr[i] === answerArr[j]) {
-          result[i] = { status: "Present", letter: guessArr[i] };
-          usedIndices.add(j);
+        if (!used.has(j) && guessArr[i] === answerArr[j]) {
+          result[i] = { letter: guessArr[i], status: "Present" };
+          used.add(j);
           found = true;
           break;
         }
       }
       if (!found) {
-        result[i] = { status: "Miss", letter: guessArr[i] };
+        result[i] = { letter: guessArr[i], status: "Miss" };
       }
     }
   }
@@ -67,25 +61,66 @@ function evaluateGuess(answer, guess) {
   return result;
 }
 
-// Format feedback result for user
+// Display colored result
 function displayResult(result) {
   return result
     .map(({ status, letter }) => {
       if (status === "Hit")
-        // green background, white text
-        return `\x1b[42m\x1b[97m ${letter.toUpperCase()} \x1b[0m`;
-      if (status === "Present")
-        // yellow background, black text
-        return `\x1b[43m\x1b[30m ${letter} \x1b[0m`;
-      return ` ${letter} `; // default, no color
+        return `\x1b[42m\x1b[97m ${letter.toUpperCase()} \x1b[0m`; // Green
+      if (status === "Present") return `\x1b[43m\x1b[30m ${letter} \x1b[0m`; // Yellow
+      return `\x1b[100m\x1b[37m ${letter} \x1b[0m`; // Gray
     })
     .join(" ");
 }
 
-// Main game loop
+// Convert feedback to a string key
+function feedbackKey(feedback) {
+  return feedback.map((f) => f.status[0]).join(""); // e.g., "HPMMM"
+}
+
+// Scoring function: fewer Hits and Presents = lower score (harder for player)
+function getScore(feedback) {
+  let hit = 0,
+    present = 0;
+  for (const f of feedback) {
+    if (f.status === "Hit") hit++;
+    if (f.status === "Present") present++;
+  }
+  return hit * 100 + present; // Higher => more correct
+}
+
+// Return best cheating feedback and filtered candidates
+function getCheatingFeedback(guess, candidates) {
+  const map = {};
+
+  for (const word of candidates) {
+    const fb = evaluateGuess(word, guess);
+    const key = feedbackKey(fb);
+    if (!map[key]) {
+      map[key] = { feedback: fb, words: [] };
+    }
+    map[key].words.push(word);
+  }
+
+  // Find feedback group with lowest score (to give worst feedback)
+  const groups = Object.values(map);
+  groups.sort((a, b) => getScore(a.feedback) - getScore(b.feedback));
+
+  return {
+    feedback: groups[0].feedback,
+    newCandidates: groups[0].words,
+  };
+}
+
+// Main game logic
 function askGuess() {
   if (currentRound >= config.maxRounds) {
-    console.log(`❌ Game over! The correct word was: ${answer.toUpperCase()}`);
+    console.log(`❌ Game over! The host never settled on a word.`);
+    console.log(
+      `🎭 Final remaining candidates: ${candidates
+        .map((w) => w.toUpperCase())
+        .join(", ")}`
+    );
     rl.close();
     return;
   }
@@ -95,8 +130,7 @@ function askGuess() {
     (input) => {
       const guess = input.trim().toLowerCase();
 
-      // Input validation
-      if (guess.length !== 5 || !/^[a-z]{5}$/.test(guess)) {
+      if (!/^[a-z]{5}$/.test(guess)) {
         console.log("⚠️ Please enter a valid 5-letter English word.\n");
         askGuess();
         return;
@@ -109,13 +143,21 @@ function askGuess() {
       }
 
       currentRound++;
-      const result = evaluateGuess(answer, guess);
-      console.log("🧩 Feedback: ", displayResult(result), "\n");
+      const { feedback, newCandidates } = getCheatingFeedback(
+        guess,
+        candidates
+      );
+      candidates = newCandidates;
+      history.push({ guess, feedback });
 
-      if (guess === answer) {
+      console.log("🧩 Feedback:", displayResult(feedback), "\n");
+
+      // If only one candidate left and guess matches it exactly
+      if (candidates.length === 1 && guess === candidates[0]) {
         console.log(
-          `🎉 Congratulations! You guessed the word in ${currentRound} round(s). Answer: ${answer.toUpperCase()}`
+          `🎉 You forced the host to commit! The word is: ${guess.toUpperCase()}`
         );
+        console.log(`You win in ${currentRound} rounds.`);
         rl.close();
         return;
       }
