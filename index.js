@@ -8,7 +8,17 @@ const rl = readline.createInterface({
 
 // Game settings
 const config = {
-  wordList: ["apple", "grape", "lemon", "peach", "mango", "melon"],
+  wordList: [
+    "hello",
+    "world",
+    "quite",
+    "fancy",
+    "fresh",
+    "panic",
+    "crazy",
+    "buggy",
+    "scare",
+  ],
   maxRounds: 6,
 };
 
