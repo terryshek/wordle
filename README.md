@@ -5,9 +5,9 @@ A simple command-line Wordle game written in Node.js.
 - The game randomly selects a 5-letter word from a predefined list.
 - You have 6 chances to guess the word.
 - After each guess, you receive feedback:
-  - 🟩 (green): Correct letter in the correct position.
-  - 🟨 (yellow): Correct letter in the wrong position.
-  - No color: Letter not in the word.
+- 🟩 **Green:** Correct letter, correct position (Hit)
+- 🟨 **Yellow:** Correct letter, wrong position (Present)
+- ⬜ **Grey:** Letter is not in the word (Miss)
 
 ## Getting Started
 
