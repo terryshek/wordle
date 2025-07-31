@@ -27,7 +27,7 @@ const answer =
 module.exports = {
     config,
     answer,
-    players: config.playersfresh .map((name) => ({
+    players: config.players.map((name) => ({
       name,
       guesses: [],
       solved: false,
