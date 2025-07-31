@@ -1,14 +1,14 @@
 import express from "express";
 import cors from "cors";
 import { evaluateGuess, selectWord } from "./game";
-import { wordList } from "./wordlist";
+import { maxRounds, wordList } from "./constants";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 let answer = selectWord(wordList);
-const maxRounds = 6;
+
 
 app.get("/api/new-game", (req, res) => {
   answer = selectWord(wordList);
