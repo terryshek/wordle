@@ -1,27 +1,13 @@
 const readline = require("readline");
+const constants = require("./constants.js");
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
+// Game settings
+const rl = constants.rl;
 // Configuration
-const config = {
-  wordList: [
-    "hello",
-    "world",
-    "quite",
-    "fancy",
-    "fresh",
-    "panic",
-    "crazy",
-    "buggy",
-    "scare",
-  ],
-  maxRounds: 6,
-};
+const config = constants.config;
 
 let candidates = config.wordList.slice();
+
 let history = [];
 let currentRound = 0;
 
