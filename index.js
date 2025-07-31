@@ -1,42 +1,19 @@
 const readline = require("readline");
 // ================= Configuration =================
-const config = {
-  wordList: [
-    "hello",
-    "world",
-    "quite",
-    "fancy",
-    "fresh",
-    "panic",
-    "crazy",
-    "buggy",
-    "scare",
-  ],
-  maxRounds: 6,
-  players: ["Terry1", "Terry2"], // Add more names to support more players
-};
+const constants = require("./constants.js");
+const config = constants.config;
 
 // Pick a shared answer (same across players)
-const answer =
-  config.wordList[
-    Math.floor(Math.random() * config.wordList.length)
-  ].toLowerCase();
+const answer = constants.answer
 
 let gameOver = false;
 let round = 1;
 
 // Store each player's guesses and result
-const players = config.players.map((name) => ({
-  name,
-  guesses: [],
-  solved: false,
-}));
+const players = constants.players
 
 // ================= Terminal Setup =================
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+const rl = constants.rl
 
 // ================= Utility Functions =================
 
